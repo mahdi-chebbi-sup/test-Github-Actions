@@ -1,0 +1,58 @@
+name: terraform CI
+
+on:
+  workflow_dispatch:
+    inputs:
+        enviroment:
+            description: "Choose the enviroment"
+            type: choice
+            required: true
+            options:
+                - prod
+                - dev
+                - pre-prod
+        version:
+            description: choose MPI version
+            type: string
+            required: true
+
+            
+
+  push:
+
+jobs:
+  validate-version:
+     runs-on: ubuntu-latest
+     steps:
+         - name: Vérifier le format de la version
+           run: |
+                VERSION="${{ github.event.inputs.version }}"
+                if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "❌ Mauvais format de version : $VERSION"
+                exit 1
+                fi
+                echo "✅ Version valide : $VERSION"
+              
+  update_prod_version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Git Configuartion
+        run: |
+             git config user.name "CB-GO github-action"
+             git config user.email "CB@github-actions.com"
+
+
+      - name: add log file
+        run: |
+            DATE=$(date +%F_%H-%M-%S)
+            date > "project-${DATE}.log"
+
+      - name: Commit 
+        run: |
+            git add .
+            git commit -m "Upgrade ${{github.event.inputs.enviroment}} enviroment to ${{github.event.inputs.version}} version"
+      - name: Push
+        run: git push
